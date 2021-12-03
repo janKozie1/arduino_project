@@ -1,5 +1,5 @@
 #define maxM 500
-#define threshold 320
+
 
 #define minMToCheck 100
 #define minValleyLength 80 
@@ -12,9 +12,10 @@ const int readyLedPin = 13;
 const byte btnPin = 2;
 
 volatile int sensorValue = 0;
-volatile byte shouldDetect = LOW;
 volatile byte lightIsOn = LOW;
 volatile byte prevLightIsOn = 0;
+
+int threshold = 300;
 
 int m[maxM] = {0};
 int index = 0;
@@ -25,9 +26,8 @@ byte isReady(int index) {
  return index == maxM - 1;
 }
 
-void cycleLed() {
-  digitalWrite(ledPin, LOW);
-  ledPin = (((ledPin - ledOffset) + 1) % ledAmount) + ledOffset;
+void changeThreshold() {
+  threshold = (threshold + 10 - 250) % 150 + 250;
 }
 
 void writeAndPushBack(int value, int index) {
@@ -91,7 +91,7 @@ void setup() {
   }
  
   pinMode(readyLedPin, OUTPUT);
-  attachInterrupt(digitalPinToInterrupt(btnPin), cycleLed, RISING);
+  attachInterrupt(digitalPinToInterrupt(btnPin), changeThreshold, RISING);
 }
 
 void loop() {
@@ -112,6 +112,6 @@ void loop() {
   }
 
   if (prevLightIsOn != lightIsOn) {
-    delay(200);  
+    delay(100);  
   }
 }
