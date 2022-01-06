@@ -155,3 +155,7 @@ Funkcja loop jest wywoływana co takt zegara. W niej pobrany zotanie nowy stan o
 Dodatkowo, dopóki tablica pomiarów nie jest wypełniona to zapala to lamkę w innym kolorze, aby wskazać na to aby poczekać.
 
 ###### Schemat układu
+![](circuit.png)
+
+###### Zdjęcie układu
+![](preview.jpg)
