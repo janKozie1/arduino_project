@@ -1,17 +1,26 @@
-# Projekt SW 
+# Projekt SW
 ## Zapalanie lampki dzwiękiem
-###### Projekt ma następujące założenia:
+
+#### Spis treści
+ - Opis projektu
+ - Rozwój projektu
+ - Zdjęcia układu
+
+
+
+## Opis projektu
+Projekt ma następujące założenia:
  - Zostanie stworzony układ składający się z
     - lampki LED
     - mikrofonu
     - przycisku
- - Układ ma reagować na głośny dzwięk (klaśnięcie / pstryknięcie) zmieniając stan lampki 
+ - Układ ma reagować na głośny dzwięk (klaśnięcie / pstryknięcie) zmieniając stan lampki
  - Układ ma zasygnalizować lampką (innym kolorem) czy jest gotowy do pracy
  - Układ ma dostosowywać się do otaczających warunków
  - Układ ma pozwalać na zmiane czujności za pomocą przycisku
- - Układ ma być odporny na drobne zakłócenia 
- 
-###### Opis implementacji
+ - Układ ma być odporny na drobne zakłócenia
+
+### Opis implementacji
 
 0. Globalne stałe
 ```c
@@ -23,12 +32,12 @@ Opisuje ile próbek sygnału (dzwięku) może się maksymalnie znajdywać w pami
 ```
 Opisuje ile próbek trzeba sprawdzić w tył w poszukiwaniu "doliny" (czyli przerwy pomiędzy sygnałami wysokimi)
 ```c
-#define minValleyLength 80 
+#define minValleyLength 80
 ```
-Opisuje minimalną szerokość "doliny". 
+Opisuje minimalną szerokość "doliny".
 ```c
-const int sensorPin = A0;   
-const int readyLedPin = 13;  
+const int sensorPin = A0;
+const int readyLedPin = 13;
 const byte btnPin = 2;
 ```
 Opisują adresy wyjść/wejść dla poszczególnych elementów układu. `sensorPin` oznacza analogowe wejście mikrofonu, `readyLedPin` oznacza cyfrowe wyjście diodu która zostanie wykorzystana do sygnalizacji stanu, `btnPin` oznacza cyfrowe wejście przycisku
@@ -42,7 +51,7 @@ int threshold = 300;
 
 int m[maxM] = {0};
 int index = 0;
-int ledPin = 11;   
+int ledPin = 11;
 ```
 Kolejne mutowalne zmienne - `threshold` oznacza różnice pomiędzy średnim poziomem dzwięku a nowo pobranym stanem, `m` przechowuje `maxM` pobranych stanów z mikrofonu, `index` przechowuje informacje na które miejsce w `m` ma zostać wpisany nowy wpis. `ledPin` oznacza który pin zostanie użyty do sygnalizacji głośnego sygnału.
 
@@ -58,7 +67,7 @@ void changeThreshold() {
   threshold = (threshold + 10 - 250) % 150 + 250;
 }
 ```
-Zmienia threshold wykrywania. Zostanie użyte jako handler przerwania na przycisku. 
+Zmienia threshold wykrywania. Zostanie użyte jako handler przerwania na przycisku.
 ```c
 void writeAndPushBack(int value, int index) {
   if (index == maxM - 1) {
@@ -66,7 +75,7 @@ void writeAndPushBack(int value, int index) {
       m[i] = m[i+1];
     }
   }
-  
+
   m[index] = value;
 }
 ```
@@ -82,10 +91,10 @@ boolean isPeak(int index) {
     total += m[i];
   }
 
-  avg = total / index;  
+  avg = total / index;
 
   if (value <= avg) {
-    return false;  
+    return false;
   }
 
   return (value - avg) > threshold;
@@ -95,21 +104,21 @@ Decyduje czy dany punkty jest szczytem, czyli czy jest większy od średniej war
 ```c
 boolean isNewPeak(int index) {
   if (!isPeak(index)) {
-    return false;  
+    return false;
   }
-  
+
   for (int i = index; i > index - minMToCheck; i--) {
    boolean wasValley = true;
-   
+
    for (int j = i; j > i - minValleyLength; j--){
      if (isPeak(j)) {
        wasValley = false;
-       break; 
+       break;
      }
    }
 
    if (wasValley) {
-    return true; 
+    return true;
    }
   }
 
@@ -122,7 +131,7 @@ void setup() {
   for (int i = 0; i < ledAmount; i++) {
       pinMode(ledOffset + i, OUTPUT);
   }
-  
+
   pinMode(readyLedPin, OUTPUT);
   attachInterrupt(digitalPinToInterrupt(btnPin), changeThreshold, RISING);
 }
@@ -138,24 +147,33 @@ void loop() {
 
   if (ready) {
      if (isNewPeak(index)) {
-        lightIsOn = !lightIsOn;  
+        lightIsOn = !lightIsOn;
      }
-  
+
      digitalWrite(ledPin, lightIsOn);
   } else {
-     index++;  
+     index++;
   }
 
   if (prevLightIsOn != lightIsOn) {
-    delay(100);  
+    delay(100);
   }
 }
 ```
 Funkcja loop jest wywoływana co takt zegara. W niej pobrany zotanie nowy stan odczytany z mikrofu, sprawdzony zostanie czy nowy punkt jest szczytem, i jeśli tak jest, to zostanie zmieniony stan lampki.
 Dodatkowo, dopóki tablica pomiarów nie jest wypełniona to zapala to lamkę w innym kolorze, aby wskazać na to aby poczekać.
 
-###### Schemat układu
+## Rozwój projektu
+
+Układ początkowo używał mikrofonu który posiadał jedynie wyjście cyfrowe. Z tego powodu, trudniej (tzn. ręcznie) dostosowywało się go do różnych poziomów głośności szumów w tle. Mikrofon nie posiadał też możliwości programowej konfiguracji progu głośności, przez co, realizacja projektu w zadowalającej formie nie była możliwa.
+
+Układ początkowo nie posiadał także zewnętrznej diody LED - używał on tej wbudowanej w układ. Jednak wynikało z tego, to, że nie dało się w jasny sposób zasygnalizować użytkownikowi, że układ jest gotowy do pracy (w finałowej wersji układu, jest to sygnalizowane innym kolorem lampki LED niż ten który użyty jest podczas wykrywania klaśnięć).
+
+Do układu, w późniejszym etapie rozwoju został dodany także przycisk regulujący `threshold` od którego wykrywane jest klaśnięcie. O ile program dostosowuje się do poziomu głośności w tle, to użytkownik może zażyczyć sobie aby cichsze dzwięki były również wykrywane.
+
+## Zdjęcia układu
+Schemat układu
 ![](circuit.png)
 
-###### Zdjęcie układu
+Zdjęcie układu
 ![](preview.jpg)
